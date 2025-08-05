@@ -104,10 +104,17 @@ class WarpFaceBack:
                 'crop': ('IMAGE',),
                 'mask': ('MASK',),
                 'warp': ('WARP',),
+            },
+            'optional': {
+                'has_face': ('BOOLEAN',),
             }
         }
 
-    def run(self, images, face, crop, mask, warp):
+    def run(self, images, face, crop, mask, warp, has_face=True):
+        # 如果has_face为False，直接返回原图像
+        if not has_face:
+            return (images,)
+
         # 处理单个人脸
         if len(face) == 0:
             return (images,)
