@@ -9,9 +9,6 @@ scipy>=1.10.0
 ultralytics>=8.0.0
 mediapipe>=0.10.0
 
-# ONNX runtime for model inference
-onnxruntime>=1.15.0
-onnxruntime-gpu>=1.15.0; sys_platform != "darwin"
 
 # Transformers for semantic segmentation
 transformers>=4.30.0
@@ -26,3 +23,6 @@ pytest>=7.4.0
 flake8>=6.0.0
 black>=23.0.0
 
+insightface
+onnxruntime
+onnxruntime-gpu; sys_platform != 'darwin' and platform_machine == 'x86_64'

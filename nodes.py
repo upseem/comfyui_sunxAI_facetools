@@ -159,16 +159,4 @@ class SelectFloatByBool:
     def run(self, cond, true_value, false_value):
         return (true_value if cond else false_value,)
 
-NODE_CLASS_MAPPINGS = {
-    'DetectFaces': DetectFaces,
-    'CropFaces': CropFaces,
-    'WarpFacesBack': WarpFaceBack,
-    "SelectFloatByBool": SelectFloatByBool,
-}
 
-NODE_DISPLAY_NAME_MAPPINGS = {
-    'DetectFaces': 'DetectFaces',
-    'CropFaces': 'CropFaces',
-    'WarpFacesBack': 'Warp Faces Back',
-    "SelectFloatByBool": "Select Float (Bool)",
-}
