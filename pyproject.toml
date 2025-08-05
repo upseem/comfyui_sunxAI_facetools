@@ -36,7 +36,7 @@ homepage = "https://github.com/upseem/comfyui_sunxAI_facetools"
 [tool.comfy]
 PublisherId = "upseem"
 DisplayName = "comfyui_sunxAI_facetools"
-Icon = ""
+Icon = "https://avatars.githubusercontent.com/u/124853686"
 
 
 [tool.setuptools.package-data]

@@ -1,0 +1,28 @@
+# Computer vision and image processing
+opencv-python>=4.8.0
+opencv-contrib-python>=4.8.0
+numpy>=1.24.0
+scikit-image>=0.21.0
+scipy>=1.10.0
+
+# Face detection and landmarks
+ultralytics>=8.0.0
+mediapipe>=0.10.0
+
+# ONNX runtime for model inference
+onnxruntime>=1.15.0
+onnxruntime-gpu>=1.15.0; sys_platform != "darwin"
+
+# Transformers for semantic segmentation
+transformers>=4.30.0
+accelerate>=0.20.0
+
+# Additional ML libraries
+Pillow>=10.0.0
+requests>=2.31.0
+
+# Development and testing (optional)
+pytest>=7.4.0
+flake8>=6.0.0
+black>=23.0.0
+
