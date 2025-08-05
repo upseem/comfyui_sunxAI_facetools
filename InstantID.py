@@ -5,6 +5,7 @@ import folder_paths
 import numpy as np
 import math
 import cv2
+import time
 import PIL.Image
 from .resampler import Resampler
 from .CrossAttentionPatch import Attn2Replace, instantid_attention
@@ -266,8 +267,8 @@ class ApplyInstantID:
             }
         }
 
-    RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "FACE_EMBEDS")
-    RETURN_NAMES = ("MODEL", "positive", "negative", "face_embed")
+    RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "FACE_EMBEDS", "BOOLEAN")
+    RETURN_NAMES = ("MODEL", "positive", "negative", "face_embed", "has_face")
     FUNCTION = "apply_instantid"
     CATEGORY = "InstantID"
 
@@ -287,13 +288,12 @@ class ApplyInstantID:
         3. 模型修补：将人脸嵌入注入到模型的注意力层中
         4. ControlNet应用：使用人脸关键点控制生成过程
         """
-
         # 如果end_at为0，直接返回原始数据，跳过所有处理
         if end_at == 0 or weight == 0:
             print(f"\033[33mINFO: end_at=0 or weight=0，跳过InstantID处理\033[0m")
-            return (model, positive, negative, None)
+            return (model, positive, negative, None, False)
 
-        import time
+
         start_total = time.time()
         print(f"\033[36m=== InstantID 处理开始 ===\033[0m")
 
@@ -327,7 +327,7 @@ class ApplyInstantID:
             print(f"\033[36m人脸检测耗时: {time.time() - start_face_detect:.3f}s\033[0m")
 
             if face_embed_raw is None:
-                raise Exception('参考图像中未检测到人脸，请确保图像包含清晰的人脸')
+                return (model, positive, negative, None , False)
 
             start_embed_process = time.time()
             clip_embed = face_embed_raw
@@ -475,7 +475,7 @@ class ApplyInstantID:
         if output_face_embed is not None:
             print(f"\033[33m💡 优化建议: 保存生成的face_embed可节省 {time.time() - start_embed:.3f}s 的人脸处理时间\033[0m")
 
-        return(work_model, cond_uncond[0], cond_uncond[1], output_face_embed)
+        return(work_model, cond_uncond[0], cond_uncond[1], output_face_embed , True)
 
 
 class SaveFaceEmbeds:
