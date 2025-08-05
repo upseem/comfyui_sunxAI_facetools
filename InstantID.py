@@ -288,6 +288,11 @@ class ApplyInstantID:
         4. ControlNet应用：使用人脸关键点控制生成过程
         """
 
+        # 如果end_at为0，直接返回原始数据，跳过所有处理
+        if end_at == 0 or weight == 0:
+            print(f"\033[33mINFO: end_at=0 or weight=0，跳过InstantID处理\033[0m")
+            return (model, positive, negative, None)
+
         import time
         start_total = time.time()
         print(f"\033[36m=== InstantID 处理开始 ===\033[0m")
