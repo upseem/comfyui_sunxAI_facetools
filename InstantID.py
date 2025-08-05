@@ -327,6 +327,7 @@ class ApplyInstantID:
             print(f"\033[36m人脸检测耗时: {time.time() - start_face_detect:.3f}s\033[0m")
 
             if face_embed_raw is None:
+                print(f"\033[33mWARNING: 参考图像中未检测到人脸, 直接忽略instantID 返回\033[0m")
                 return (model, positive, negative, None , False)
 
             start_embed_process = time.time()
