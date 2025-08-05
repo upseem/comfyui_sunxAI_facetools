@@ -1,48 +1,39 @@
-name: Publish Comfy Node
+name: 📦 Auto Tag + Publish to Comfy registry
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
     paths:
       - "pyproject.toml"
-      - "nodes.py"
-      - "**/*.py"
-      - ".github/workflows/publish_node.yml"
-  workflow_dispatch:
+
+permissions:
+  contents: write  # 需要打 tag 权限
+  issues: write
 
 jobs:
-  publish:
+  publish-node:
+    name: Publish Custom Node to registry
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout
+      - name: ♻️ Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: 🧪 Extract version from pyproject.toml
+        id: get_version
+        run: |
+          VERSION=$(grep '^version' pyproject.toml | head -n 1 | cut -d '"' -f2)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "::set-output name=version::$VERSION"
+
+      - name: 🏷️ Create Git Tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag v${{ steps.get_version.outputs.version }}
+          git push origin v${{ steps.get_version.outputs.version }}
+
+      - name: 📦 Publish Custom Node
+        uses: Comfy-Org/publish-node-action@main
         with:
-          python-version: "3.10"
-
-      - name: Install comfy-cli
-        run: |
-          python -m pip install --upgrade pip
-          pip install "comfy-cli>=0.9.0"
-
-      - name: Validate node
-        run: |
-          comfy node validate
-
-      - name: Publish node
-        env:
-          COMFY_REGISTRY_ACCESS_TOKEN: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
-        run: |
-          if [ -z "${COMFY_REGISTRY_ACCESS_TOKEN}" ]; then
-            echo "Missing secret: REGISTRY_ACCESS_TOKEN"; exit 1;
-          fi
-          # 大多数版本的 comfy-cli 会从 COMFY_REGISTRY_ACCESS_TOKEN 读取 Token
-          # 如果你的版本需要从标准输入读取，可以改为：
-          #   echo "${COMFY_REGISTRY_ACCESS_TOKEN}" | comfy node publish
-          comfy node publish
+          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
