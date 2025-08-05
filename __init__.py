@@ -21,6 +21,8 @@ NODE_CLASS_MAPPINGS = {
     "VAEEncodeNew": VAEEncodeNew,
 
     'ColorAdjustNew(FaceParsing)': ColorAdjust,
+
+    "SaveImageWebsocketNew": SaveImageWebsocket,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -39,6 +41,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "VAEEncodeNew": "VAE Encode New",
 
     'ColorAdjustNew(FaceParsing)': 'Color Adjust (Face Parsing) New',
+    "SaveImageWebsocketNew": "Save Image Websocket New To JPG",
 }
 
 

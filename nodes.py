@@ -2,6 +2,12 @@ import torch
 from torch import Tensor
 from torchvision.transforms import functional
 
+from PIL import Image
+import numpy as np
+import comfy.utils
+import time
+from io import BytesIO
+
 
 from .utils import *
 
@@ -322,6 +328,60 @@ class ColorAdjust:
         result = permutedImage.permute(0, 2, 3, 1)
 
         return (result,)
-        result = permutedImage.permute(0, 2, 3, 1)
 
-        return (result,)
+
+class SaveImageWebsocket:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+                "jpeg_quality": (
+                    "INT",
+                    {
+                        "default": 95,
+                        "min": 60,
+                        "max": 100,
+                        "step": 1,
+                        "tooltip": "JPEG压缩质量（60=低质量，100=高质量）"
+                    },
+                ),
+            }
+        }
+
+    RETURN_TYPES = ()
+    FUNCTION = "save_images"
+    OUTPUT_NODE = True
+    CATEGORY = "sunxAI_facetools"
+
+    def save_images(self, images, jpeg_quality):
+        pbar = comfy.utils.ProgressBar(images.shape[0])
+
+        for idx, image in enumerate(images):
+            try:
+                i = 255. * image.cpu().numpy()
+                img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+
+                # 直接在内存中进行JPEG压缩
+                buffer = BytesIO()
+                img.save(buffer, format="JPEG", quality=jpeg_quality)
+                buffer.seek(0)
+                jpg_img = Image.open(buffer).convert("RGB").copy()
+
+                # 发送JPEG格式图像
+                pbar.update_absolute(idx, images.shape[0], ("JPEG", jpg_img, None))
+
+            except Exception as e:
+                print(f"[SaveImageWebsocket] ❌ Skipped idx={idx} due to error: {e}")
+                continue
+
+        return {}
+
+    @classmethod
+    def IS_CHANGED(s, images, jpeg_quality):
+        return time.time()
+
+
+
+
+
