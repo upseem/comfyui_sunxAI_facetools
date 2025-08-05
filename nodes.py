@@ -170,9 +170,11 @@ class VAEDecodeNew:
     DESCRIPTION = "Decodes latent images back into pixel space images."
 
     def decode(self, vae, samples, has_face=True):
-        # 如果has_face为False，直接返回原图像
+        # 如果has_face为False，返回空白画布，节省VAE解码时间
         if not has_face:
-            return (None,)
+            # 创建512x512的黑色空白画布
+            blank_canvas = torch.zeros((1, 512, 512, 3), dtype=torch.float32)
+            return (blank_canvas,)
         images = vae.decode(samples["samples"])
         if len(images.shape) == 5: #Combine batches
             images = images.reshape(-1, images.shape[-3], images.shape[-2], images.shape[-1])
@@ -194,8 +196,11 @@ class VAEEncodeNew:
     CATEGORY = "sunxAI_facetools"
 
     def encode(self, vae, pixels, has_face=True):
+        # 如果has_face为False，返回空白latent，节省VAE编码时间
         if not has_face:
-            return (None,)
+            # 创建512x512对应的空白latent (512//8 = 64)
+            blank_latent = torch.zeros([1, 4, 64, 64])
+            return ({"samples": blank_latent},)
 
         t = vae.encode(pixels[:,:,:,:3])
         return ({"samples":t}, )
@@ -314,6 +319,9 @@ class ColorAdjust:
         if (gamma != 1):
             permutedImage = functional.adjust_gamma(permutedImage, gamma)
 
+        result = permutedImage.permute(0, 2, 3, 1)
+
+        return (result,)
         result = permutedImage.permute(0, 2, 3, 1)
 
         return (result,)

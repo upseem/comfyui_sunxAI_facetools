@@ -19,6 +19,8 @@ NODE_CLASS_MAPPINGS = {
 
     "VAEDecodeNew": VAEDecodeNew,
     "VAEEncodeNew": VAEEncodeNew,
+
+    'ColorAdjustNew(FaceParsing)': ColorAdjust,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -35,6 +37,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
 
     "VAEDecodeNew": "VAE Decode New",
     "VAEEncodeNew": "VAE Encode New",
+
+    'ColorAdjustNew(FaceParsing)': 'Color Adjust (Face Parsing) New',
 }
 
 
