@@ -1,6 +1,9 @@
 import torch
-from .utils import *
+from torch import Tensor
+from torchvision.transforms import functional
 
+
+from .utils import *
 
 class DetectFaces:
     @classmethod
@@ -20,7 +23,7 @@ class DetectFaces:
     RETURN_TYPES = ('FACE', 'BOOLEAN')
     RETURN_NAMES = ('faces', 'has_face')
     FUNCTION = 'run'
-    CATEGORY = 'facetools'
+    CATEGORY = 'sunxAI_facetools'
 
     def run(self, image, threshold, min_size, max_size, mask=None):
         faces = []
@@ -65,7 +68,7 @@ class CropFaces:
     RETURN_TYPES = ('IMAGE', 'MASK', 'WARP')
     RETURN_NAMES = ('crops', 'masks', 'warps')
     FUNCTION = 'run'
-    CATEGORY = 'facetools'
+    CATEGORY = 'sunxAI_facetools'
 
     def run(self, faces, crop_size, crop_factor, mask_type):
         if len(faces) == 0:
@@ -93,7 +96,7 @@ class CropFaces:
 class WarpFaceBack:
     RETURN_TYPES = ('IMAGE',)
     FUNCTION = 'run'
-    CATEGORY = 'facetools'
+    CATEGORY = 'sunxAI_facetools'
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -163,7 +166,7 @@ class VAEDecodeNew:
     OUTPUT_TOOLTIPS = ("The decoded image.",)
     FUNCTION = "decode"
 
-    CATEGORY = "latent"
+    CATEGORY = "sunxAI_facetools"
     DESCRIPTION = "Decodes latent images back into pixel space images."
 
     def decode(self, vae, samples, has_face=True):
@@ -188,11 +191,12 @@ class VAEEncodeNew:
     RETURN_TYPES = ("LATENT",)
     FUNCTION = "encode"
 
-    CATEGORY = "latent"
+    CATEGORY = "sunxAI_facetools"
 
     def encode(self, vae, pixels, has_face=True):
-        if has_face is False:
+        if not has_face:
             return (None,)
+
         t = vae.encode(pixels[:,:,:,:3])
         return ({"samples":t}, )
 
@@ -210,9 +214,106 @@ class SelectFloatByBool:
     RETURN_TYPES = ("FLOAT",)
     RETURN_NAMES = ("value",)
     FUNCTION = "run"
-    CATEGORY = "Flow/Values"
+    CATEGORY = "sunxAI_facetools"
 
     def run(self, cond, true_value, false_value):
         return (true_value if cond else false_value,)
 
 
+
+class ColorAdjust:
+    def __init__(self):
+        pass
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image": ("IMAGE",),
+                "contrast": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0,
+                    "max": 255,
+                    "step": 0.01,
+                    "round": 0.001,
+                    "display": "number"
+                }),
+                "brightness": ("FLOAT", {
+                    "default": 1.0,
+                    "min": -255,
+                    "max": 255,
+                    "step": 0.01,
+                    "round": 0.001, #The value represeting the precision to round to, will be set to the step value by default. Can be set to False to disable rounding.
+                    "display": "number"
+                }),
+                "saturation": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0,
+                    "max": 255,
+                    "step": 0.01,
+                    "round": 0.001,
+                    "display": "number"
+                }),
+                "hue": ("FLOAT", {
+                    "default": 0,
+                    "min": -0.5,
+                    "max": 0.5,
+                    "step": 0.001,
+                    "round": 0.001,
+                    "display": "number"
+                }),
+                "gamma": ("FLOAT", {
+                    "default": 1.0,
+                    "min": 0,
+                    "max": 255,
+                    "step": 0.01,
+                    "round": 0.001,
+                    "display": "number"
+                }),
+            },
+            'optional': {
+                'has_face': ('BOOLEAN',),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    #RETURN_NAMES = ("image_output_name",)
+
+    FUNCTION = "main"
+
+    #OUTPUT_NODE = False
+
+    CATEGORY = "sunxAI_facetools"
+
+    def main(self,
+             image: Tensor,
+             contrast: float = 1,
+             brightness: float = 1,
+             saturation: float = 1,
+             hue: float = 0,
+             gamma: float = 1,
+             has_face: bool = True):
+
+        if not has_face:
+            return (image,)
+
+        permutedImage = image.permute(0, 3, 1, 2)
+
+        if (contrast != 1):
+            permutedImage = functional.adjust_contrast(permutedImage, contrast)
+
+        if (brightness != 1):
+            permutedImage = functional.adjust_brightness(permutedImage, brightness)
+
+        if (saturation != 1):
+            permutedImage = functional.adjust_saturation(permutedImage, saturation)
+
+        if (hue != 0):
+            permutedImage = functional.adjust_hue(permutedImage, hue)
+
+        if (gamma != 1):
+            permutedImage = functional.adjust_gamma(permutedImage, gamma)
+
+        result = permutedImage.permute(0, 2, 3, 1)
+
+        return (result,)

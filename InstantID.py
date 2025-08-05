@@ -145,7 +145,7 @@ class InstantIDModelLoader:
 
     RETURN_TYPES = ("INSTANTID",)
     FUNCTION = "load_model"
-    CATEGORY = "InstantID"
+    CATEGORY = "sunxAI_facetools"
 
     def load_model(self, instantid_file):
         ckpt_path = folder_paths.get_full_path("instantid", instantid_file)
@@ -214,7 +214,7 @@ class InstantIDFaceAnalysis:
 
     RETURN_TYPES = ("FACEANALYSIS",)
     FUNCTION = "load_insight_face"
-    CATEGORY = "InstantID"
+    CATEGORY = "sunxAI_facetools"
 
     def load_insight_face(self, provider):
         model = FaceAnalysis(name="antelopev2", root=INSIGHTFACE_DIR, providers=[provider + 'ExecutionProvider',]) # alternative to buffalo_l
@@ -270,7 +270,7 @@ class ApplyInstantID:
     RETURN_TYPES = ("MODEL", "CONDITIONING", "CONDITIONING", "FACE_EMBEDS", "BOOLEAN")
     RETURN_NAMES = ("MODEL", "positive", "negative", "face_embed", "has_face")
     FUNCTION = "apply_instantid"
-    CATEGORY = "InstantID"
+    CATEGORY = "sunxAI_facetools"
 
     def apply_instantid(self, instantid, insightface, control_net, image, model, positive, negative, start_at, end_at, weight=.8, ip_weight=None, cn_strength=None, noise=0.35, image_kps=None, mask=None, combine_embeds='average', face_embed=None):
         """
@@ -502,7 +502,7 @@ class SaveFaceEmbeds:
     RETURN_TYPES = ()
     RETURN_NAMES = ()
     FUNCTION = "save_face_embed"
-    CATEGORY = "InstantID"
+    CATEGORY = "sunxAI_facetools"
     OUTPUT_NODE = True
 
     def save_face_embed(self, face_embed, name):
@@ -566,7 +566,7 @@ class LoadFaceEmbeds:
     RETURN_TYPES = ("FACE_EMBEDS",)
     RETURN_NAMES = ("face_embed",)
     FUNCTION = "load_face_embed"
-    CATEGORY = "InstantID"
+    CATEGORY = "sunxAI_facetools"
 
     def load_face_embed(self, name, seed=0):
         face_embeds_dir = os.path.join(folder_paths.models_dir, "face_embeds")
