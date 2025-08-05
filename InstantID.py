@@ -506,8 +506,6 @@ class SaveFaceEmbeds:
     OUTPUT_NODE = True
 
     def save_face_embed(self, face_embed, name):
-        import json
-        import time
 
         # 检查face_embed是否为None或空
         if face_embed is None:
@@ -561,6 +559,7 @@ class LoadFaceEmbeds:
         return {
             "required": {
                 "name": ("STRING", {"default": "face_embed"}),
+                "seed": ("INT", {"default": 0, "min": 0, "max": 0xffffffffffffffff}),
             }
         }
 
@@ -569,7 +568,7 @@ class LoadFaceEmbeds:
     FUNCTION = "load_face_embed"
     CATEGORY = "InstantID"
 
-    def load_face_embed(self, name):
+    def load_face_embed(self, name, seed=0):
         face_embeds_dir = os.path.join(folder_paths.models_dir, "face_embeds")
 
         # 确保文件名以.pt结尾
@@ -581,8 +580,13 @@ class LoadFaceEmbeds:
             return (None,)
 
         try:
+            print(f"\033[36mINFO: Loading face embed (reload={seed})\033[0m")
+
             # 加载人脸嵌入数据
             save_data = torch.load(filepath, map_location="cpu")
+
+            # 立即处理数据并清理原始缓存
+            face_embed = None
 
             # 检查是否为无人脸标记
             if save_data.get('no_face', False):
@@ -595,13 +599,18 @@ class LoadFaceEmbeds:
                 # 正常的人脸嵌入数据
                 if 'cond' in save_data and 'uncond' in save_data:
                     print(f"\033[32mINFO: Loaded face embeddings from {filepath}\033[0m")
+                    # 复制数据到新的字典
                     face_embed = {
-                        "cond": save_data["cond"],
-                        "uncond": save_data["uncond"]
+                        "cond": save_data["cond"].clone(),
+                        "uncond": save_data["uncond"].clone()
                     }
                 else:
                     print(f"\033[33mWARNING: Invalid saved data format, missing 'cond' or 'uncond' fields\033[0m")
+                    del save_data  # 清理内存
                     return (None,)
+
+            # 清理原始加载的数据，释放内存
+            del save_data
 
             return (face_embed,)
 
