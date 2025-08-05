@@ -57,10 +57,10 @@ class Models:
             cls._yolo = YOLO(os.path.join(models_dir,'ultralytics','bbox','face_yolov8m.pt'))
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             cls._yolo = cls._yolo.to(device)
-            print(f"chen [YOLO] Model loaded to device: {device}")
+            print(f"[YOLO] Model loaded to device: {device}")
 
         # 推理时打印图像和当前模型 device（用于验证）
-        print(f"chen [YOLO] Predicting on device: {cls._yolo.device}")
+        print(f"[YOLO] Predicting on device: {cls._yolo.device}")
         dets = cls._yolo(img, conf=threshold)[0]
         return dets
     @classmethod
