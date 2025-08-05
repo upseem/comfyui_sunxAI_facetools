@@ -1,34 +1,42 @@
-# GitHub CI build pipeline
-name: {{ cookiecutter.project_slug }} CI build
+name: comfyui_sunxAI_facetools CI build
 
 on:
   pull_request:
-    branches:
-      - master
-      - main
+    branches: [ master, main ]
+  push:
+    branches: [ main ]  # 可选：推送 main 时也跑一遍
+
 jobs:
   build:
-    runs-on: {% raw %} ${{ matrix.os }} {% endraw %}
-    env:
-      PYTHONIOENCODING: "utf8"
+    runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.12"]
+        python-version: [ "3.10", "3.12" ]
+
+    env:
+      PYTHONIOENCODING: "utf8"
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: {% raw %} ${{ matrix.python-version }} {% endraw %}
+          python-version: ${{ matrix.python-version }}
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          # 安装项目 + 开发依赖（依赖你的 pyproject 中的 optional-dependencies.dev）
+          pip install ".[dev]"
+
       - name: Run Linting
         run: |
+          ruff version
           ruff check .
+
       - name: Run Tests
         run: |
-          pytest tests/
+          pytest -q
