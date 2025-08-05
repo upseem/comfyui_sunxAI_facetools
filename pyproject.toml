@@ -4,78 +4,70 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfyui_sunxAI_facetools"
-version = "0.0.3"
+version = "0.0.4"  # 每次发布务必递增
 description = "Face detection & restoration tools for ComfyUI by Sunx.ai"
 authors = [
-  {name = "Sunx.ai", email = "sunx.ai@hotmail.com"}
+  { name = "Sunx.ai", email = "sunx.ai@hotmail.com" }
 ]
 readme = "README.md"
-license = {text = "GNU General Public License v3"}
-classifiers = []
+# 使用 SPDX 标准写法，避免 JSON 字符串
+license = { text = "GPL-3.0-only" }
+requires-python = ">=3.10"
 dependencies = [
-
+  "Pillow>=10.0.0"
 ]
-
-
+classifiers = []
 
 [project.optional-dependencies]
 dev = [
-    "bump-my-version",
-    "coverage",  # testing
-    "mypy",  # linting
-    "pre-commit", # runs linting on commit
-    "pytest",  # testing
-    "ruff",  # linting
+  "bump-my-version",
+  "coverage",
+  "mypy",
+  "pre-commit",
+  "pytest",
+  "ruff",
 ]
 
 [project.urls]
-bugs = "https://github.com/upseem/comfyui_sunxAI_facetools/issues"
-homepage = "https://github.com/upseem/comfyui_sunxAI_facetools"
-
+Repository = "https://github.com/upseem/comfyui_sunxAI_facetools"  # ← 关键字段：解决 repository is required
+Homepage = "https://github.com/upseem/comfyui_sunxAI_facetools"
+Bugs = "https://github.com/upseem/comfyui_sunxAI_facetools/issues"
 
 [tool.comfy]
+# 必须与 Registry 上创建的 Publisher 一致（@ 后面的那段）
 PublisherId = "sunxai"
 DisplayName = "comfyui_sunxAI_facetools"
 Icon = "https://avatars.githubusercontent.com/u/124853686"
-
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = [
-    "tests",
-]
+testpaths = ["tests"]
 
 [tool.mypy]
 files = "."
-
-# Use strict defaults
 strict = true
 warn_unreachable = true
 warn_no_return = true
 
 [[tool.mypy.overrides]]
-# Don't require test functions to include types
 module = "tests.*"
 allow_untyped_defs = true
 disable_error_code = "attr-defined"
 
 [tool.ruff]
-# extend-exclude = ["static", "ci/templates"]
 line-length = 140
 src = ["src", "tests"]
 target-version = "py39"
 
-# Add rules to ban exec/eval
 [tool.ruff.lint]
 select = [
-    "S102",  # exec-builtin
-    "S307",  # eval-used
-    "W293",
-    "F",  # The "F" series in Ruff stands for "Pyflakes" rules, which catch various Python syntax errors and undefined names.
-    # See all rules here: https://docs.astral.sh/ruff/rules/#pyflakes-f
+  "S102",  # exec-builtin
+  "S307",  # eval-used
+  "W293",
+  "F",
 ]
 
 [tool.ruff.lint.flake8-quotes]
