@@ -315,6 +315,11 @@ class ApplyInstantID:
         start_embed = time.time()
         # 如果提供了预计算的face_embed，直接使用；否则从图像提取
         if face_embed is not None:
+            # 检查是否为无人脸标记
+            if face_embed.get('no_face', False):
+                print(f"\033[33mINFO: 使用预计算的无人脸标记，跳过InstantID处理\033[0m")
+                return (model, positive, negative, face_embed, False)
+
             print(f"\033[32mINFO: 使用预计算的人脸嵌入\033[0m")
             image_prompt_embeds = face_embed['cond'].to(self.device, dtype=self.dtype)
             uncond_image_prompt_embeds = face_embed['uncond'].to(self.device, dtype=self.dtype)
@@ -327,8 +332,13 @@ class ApplyInstantID:
             print(f"\033[36m人脸检测耗时: {time.time() - start_face_detect:.3f}s\033[0m")
 
             if face_embed_raw is None:
-                print(f"\033[33mWARNING: 参考图像中未检测到人脸, 直接忽略instantID 返回\033[0m")
-                return (model, positive, negative, None , False)
+                print(f"\033[33mWARNING: 参考图像中未检测到人脸, 创建无人脸标记并返回\033[0m")
+                # 创建无人脸标记，避免下次重复检测
+                no_face_embed = {
+                    'no_face': True,
+                    'timestamp': int(time.time())
+                }
+                return (model, positive, negative, no_face_embed, False)
 
             start_embed_process = time.time()
             clip_embed = face_embed_raw
