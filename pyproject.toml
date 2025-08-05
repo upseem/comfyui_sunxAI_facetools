@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfyui_sunxAI_facetools"
-version = "0.0.2"
+version = "0.0.3"
 description = "Face detection & restoration tools for ComfyUI by Sunx.ai"
 authors = [
   {name = "Sunx.ai", email = "sunx.ai@hotmail.com"}
@@ -34,7 +34,7 @@ homepage = "https://github.com/upseem/comfyui_sunxAI_facetools"
 
 
 [tool.comfy]
-PublisherId = "upseem"
+PublisherId = "sunxai"
 DisplayName = "comfyui_sunxAI_facetools"
 Icon = "https://avatars.githubusercontent.com/u/124853686"
 
