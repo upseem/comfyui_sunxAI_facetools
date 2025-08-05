@@ -16,6 +16,9 @@ NODE_CLASS_MAPPINGS = {
     "ApplyInstantID": ApplyInstantID,
     "SaveFaceEmbeds": SaveFaceEmbeds,
     "LoadFaceEmbeds": LoadFaceEmbeds,
+
+    "VAEDecodeNew": VAEDecodeNew,
+    "VAEEncodeNew": VAEEncodeNew,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -29,6 +32,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "ApplyInstantID": "Apply InstantID",
     "SaveFaceEmbeds": "Save Face Embeds",
     "LoadFaceEmbeds": "Load Face Embeds",
+
+    "VAEDecodeNew": "VAE Decode New",
+    "VAEEncodeNew": "VAE Encode New",
 }
 
 

@@ -147,6 +147,55 @@ class WarpFaceBack:
         results = torch.stack(results)
         return (results, )
 
+class VAEDecodeNew:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "samples": ("LATENT", {"tooltip": "The latent to be decoded."}),
+                "vae": ("VAE", {"tooltip": "The VAE model used for decoding the latent."})
+            },
+            'optional': {
+                'has_face': ('BOOLEAN',),
+            }
+        }
+    RETURN_TYPES = ("IMAGE",)
+    OUTPUT_TOOLTIPS = ("The decoded image.",)
+    FUNCTION = "decode"
+
+    CATEGORY = "latent"
+    DESCRIPTION = "Decodes latent images back into pixel space images."
+
+    def decode(self, vae, samples, has_face=True):
+        # 如果has_face为False，直接返回原图像
+        if not has_face:
+            return (None,)
+        images = vae.decode(samples["samples"])
+        if len(images.shape) == 5: #Combine batches
+            images = images.reshape(-1, images.shape[-3], images.shape[-2], images.shape[-1])
+        return (images, )
+
+
+class VAEEncodeNew:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": { "pixels": ("IMAGE", ), "vae": ("VAE", )},
+            'optional': {
+                'has_face': ('BOOLEAN',),
+            }
+            }
+    RETURN_TYPES = ("LATENT",)
+    FUNCTION = "encode"
+
+    CATEGORY = "latent"
+
+    def encode(self, vae, pixels, has_face=True):
+        if has_face is False:
+            return (None,)
+        t = vae.encode(pixels[:,:,:,:3])
+        return ({"samples":t}, )
+
 
 class SelectFloatByBool:
     @classmethod
