@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "comfyui_sunxAI_facetools"
-version = "0.1.1"  # 每次发布务必递增
+version = "0.1.2"  # 每次发布务必递增
 description = "Face detection & restoration tools for ComfyUI by Sunx.ai"
 authors = [
   { name = "Sunx.ai", email = "sunx.ai@hotmail.com" }

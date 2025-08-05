@@ -516,12 +516,10 @@ class SaveFaceEmbeds:
 
         # 创建保存目录
         save_dir = os.path.join(folder_paths.models_dir, "face_embeds")
-
         os.makedirs(save_dir, exist_ok=True)
 
         # 确保文件名以.pt结尾
         filename = name + '.pt'
-
         filepath = os.path.join(save_dir, filename)
 
         # 检查文件是否已存在
@@ -529,15 +527,31 @@ class SaveFaceEmbeds:
             print(f"\033[33mWARNING: File {filepath} already exists, skipping save.\033[0m")
             return {}
 
-        # 保存人脸嵌入数据
-        save_data = {
-            "cond": face_embed["cond"].cpu(),
-            "uncond": face_embed["uncond"].cpu(),
-            "timestamp": int(time.time())
-        }
+        # 处理不同类型的face_embed数据
+        save_data = {}
+
+        # 检查是否为无人脸标记
+        if face_embed.get('no_face', False):
+            print(f"\033[32mINFO: Saving no-face marker to {filepath}\033[0m")
+            save_data = {
+                "no_face": True,
+                "timestamp": face_embed.get('timestamp', int(time.time()))
+            }
+        else:
+            # 正常的人脸嵌入数据
+            if 'cond' in face_embed and 'uncond' in face_embed:
+                print(f"\033[32mINFO: Saving face embeddings to {filepath}\033[0m")
+                save_data = {
+                    "cond": face_embed["cond"].cpu(),
+                    "uncond": face_embed["uncond"].cpu(),
+                    "timestamp": int(time.time())
+                }
+            else:
+                print(f"\033[33mWARNING: Invalid face_embed format, missing 'cond' or 'uncond' fields\033[0m")
+                return {}
 
         torch.save(save_data, filepath)
-        print(f"\033[32mINFO: Face embed saved to {filepath}\033[0m")
+        print(f"\033[32mINFO: Face embed data saved successfully\033[0m")
 
         return {}
 
@@ -560,24 +574,40 @@ class LoadFaceEmbeds:
 
         # 确保文件名以.pt结尾
         filename = name + '.pt'
-
         filepath = os.path.join(face_embeds_dir, filename)
 
         if not os.path.exists(filepath):
             print(f"\033[33mWARNING: Face embed file not found: {filepath}, returning None\033[0m")
             return (None,)
 
-        # 加载人脸嵌入数据
-        save_data = torch.load(filepath, map_location="cpu")
+        try:
+            # 加载人脸嵌入数据
+            save_data = torch.load(filepath, map_location="cpu")
 
-        face_embed = {
-            "cond": save_data["cond"],
-            "uncond": save_data["uncond"]
-        }
+            # 检查是否为无人脸标记
+            if save_data.get('no_face', False):
+                print(f"\033[32mINFO: Loaded no-face marker from {filepath}\033[0m")
+                face_embed = {
+                    "no_face": True,
+                    "timestamp": save_data.get('timestamp', 0)
+                }
+            else:
+                # 正常的人脸嵌入数据
+                if 'cond' in save_data and 'uncond' in save_data:
+                    print(f"\033[32mINFO: Loaded face embeddings from {filepath}\033[0m")
+                    face_embed = {
+                        "cond": save_data["cond"],
+                        "uncond": save_data["uncond"]
+                    }
+                else:
+                    print(f"\033[33mWARNING: Invalid saved data format, missing 'cond' or 'uncond' fields\033[0m")
+                    return (None,)
 
-        print(f"\033[32mINFO: Face embed loaded from {filepath}\033[0m")
+            return (face_embed,)
 
-        return (face_embed,)
+        except Exception as e:
+            print(f"\033[31mERROR: Failed to load face embed from {filepath}: {e}\033[0m")
+            return (None,)
 
 
 
