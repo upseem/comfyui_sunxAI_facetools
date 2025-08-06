@@ -360,10 +360,10 @@ class ApplyInstantID:
 
             # 使用InstantID模型处理嵌入
             start_instantid = time.time()
-            self.instantid = instantid
-            self.instantid.to(self.device, dtype=self.dtype)
+            instantid_model = instantid
+            instantid_model.to(self.device, dtype=self.dtype)
 
-            image_prompt_embeds, uncond_image_prompt_embeds = self.instantid.get_image_embeds(clip_embed.to(self.device, dtype=self.dtype), clip_embed_zeroed.to(self.device, dtype=self.dtype))
+            image_prompt_embeds, uncond_image_prompt_embeds = instantid_model.get_image_embeds(clip_embed.to(self.device, dtype=self.dtype), clip_embed_zeroed.to(self.device, dtype=self.dtype))
 
             image_prompt_embeds = image_prompt_embeds.to(self.device, dtype=self.dtype)
             uncond_image_prompt_embeds = uncond_image_prompt_embeds.to(self.device, dtype=self.dtype)
@@ -405,7 +405,7 @@ class ApplyInstantID:
 
         # 准备修补参数
         patch_kwargs = {
-            "ipadapter": self.instantid,
+            "ipadapter": instantid,
             "weight": ip_weight,
             "cond": image_prompt_embeds,
             "uncond": uncond_image_prompt_embeds,
