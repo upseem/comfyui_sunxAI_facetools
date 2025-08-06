@@ -319,9 +319,10 @@ class ApplyInstantID:
                 print(f"\033[33mINFO: 使用预计算的无人脸标记，跳过InstantID处理\033[0m")
                 return (model, positive, negative, face_embed, False)
 
-            print(f"\033[32mINFO: 使用预计算的人脸嵌入\033[0m")
-            image_prompt_embeds = face_embed['cond'].to(device, dtype=dtype)
-            uncond_image_prompt_embeds = face_embed['uncond'].to(device, dtype=dtype)
+            print(f"\033[32mINFO: 使用预计算的人脸嵌入（已在GPU）\033[0m")
+            # 数据已在LoadFaceEmbeds中加载到GPU，直接使用
+            image_prompt_embeds = face_embed['cond']
+            uncond_image_prompt_embeds = face_embed['uncond']
             output_face_embed = None  # 已有embed，不需要输出新的
         else:
             print(f"\033[32mINFO: 从参考图像提取人脸特征\033[0m")
@@ -505,7 +506,6 @@ class SaveFaceEmbeds:
     OUTPUT_NODE = True
 
     def save_face_embed(self, face_embed, name):
-
         # 检查face_embed是否为None或空
         if face_embed is None:
             print(f"\033[33mWARNING: Face embed is None, skipping save.\033[0m")
@@ -535,7 +535,7 @@ class SaveFaceEmbeds:
                 "timestamp": face_embed.get('timestamp', int(time.time()))
             }
         else:
-            # 正常的人脸嵌入数据
+            # 正常的人脸嵌入数据 - 保存到磁盘，立即释放内存
             if 'cond' in face_embed and 'uncond' in face_embed:
                 print(f"\033[32mINFO: Saving face embeddings to {filepath}\033[0m")
                 save_data = {
@@ -547,8 +547,12 @@ class SaveFaceEmbeds:
                 print(f"\033[33mWARNING: Invalid face_embed format, missing 'cond' or 'uncond' fields\033[0m")
                 return {}
 
+        # 保存到磁盘
         torch.save(save_data, filepath)
-        print(f"\033[32mINFO: Face embed data saved successfully\033[0m")
+
+        # 立即清理内存
+        del save_data
+        print(f"\033[32mINFO: Face embed data saved successfully and memory cleared\033[0m")
 
         return {}
 
@@ -579,13 +583,10 @@ class LoadFaceEmbeds:
             return (None,)
 
         try:
-            print(f"\033[36mINFO: Loading face embed (reload={seed})\033[0m")
+            print(f"\033[36mINFO: Loading face embed (reload={seed}): {filename}\033[0m")
 
-            # 加载人脸嵌入数据
+            # 加载人脸嵌入数据到CPU
             save_data = torch.load(filepath, map_location="cpu")
-
-            # 立即处理数据并清理原始缓存
-            face_embed = None
 
             # 检查是否为无人脸标记
             if save_data.get('no_face', False):
@@ -594,24 +595,31 @@ class LoadFaceEmbeds:
                     "no_face": True,
                     "timestamp": save_data.get('timestamp', 0)
                 }
+                del save_data
+                return (face_embed,)
+
+            # 正常的人脸嵌入数据 - 直接加载到GPU
+            if 'cond' in save_data and 'uncond' in save_data:
+                print(f"\033[32mINFO: Loading face embeddings to GPU from {filepath}\033[0m")
+
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+
+                face_embed = {
+                    "cond": save_data["cond"].to(device, dtype=dtype),
+                    "uncond": save_data["uncond"].to(device, dtype=dtype),
+                    "timestamp": save_data.get('timestamp', 0)
+                }
+
+                # 清理CPU数据
+                del save_data
+                print(f"\033[32mINFO: Face embeddings loaded to {device} and CPU cache cleared\033[0m")
+
+                return (face_embed,)
             else:
-                # 正常的人脸嵌入数据
-                if 'cond' in save_data and 'uncond' in save_data:
-                    print(f"\033[32mINFO: Loaded face embeddings from {filepath}\033[0m")
-                    # 复制数据到新的字典
-                    face_embed = {
-                        "cond": save_data["cond"].clone(),
-                        "uncond": save_data["uncond"].clone()
-                    }
-                else:
-                    print(f"\033[33mWARNING: Invalid saved data format, missing 'cond' or 'uncond' fields\033[0m")
-                    del save_data  # 清理内存
-                    return (None,)
-
-            # 清理原始加载的数据，释放内存
-            del save_data
-
-            return (face_embed,)
+                print(f"\033[33mWARNING: Invalid saved data format, missing 'cond' or 'uncond' fields\033[0m")
+                del save_data
+                return (None,)
 
         except Exception as e:
             print(f"\033[31mERROR: Failed to load face embed from {filepath}: {e}\033[0m")
