@@ -303,8 +303,7 @@ class ApplyInstantID:
         if dtype not in [torch.float32, torch.float16, torch.bfloat16]:
             dtype = torch.float16 if comfy.model_management.should_use_fp16() else torch.float32
 
-        self.dtype = dtype
-        self.device = comfy.model_management.get_torch_device()
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # 设置权重参数
         ip_weight = weight if ip_weight is None else ip_weight  # IP-Adapter权重
@@ -321,8 +320,8 @@ class ApplyInstantID:
                 return (model, positive, negative, face_embed, False)
 
             print(f"\033[32mINFO: 使用预计算的人脸嵌入\033[0m")
-            image_prompt_embeds = face_embed['cond'].to(self.device, dtype=self.dtype)
-            uncond_image_prompt_embeds = face_embed['uncond'].to(self.device, dtype=self.dtype)
+            image_prompt_embeds = face_embed['cond'].to(device, dtype=dtype)
+            uncond_image_prompt_embeds = face_embed['uncond'].to(device, dtype=dtype)
             output_face_embed = None  # 已有embed，不需要输出新的
         else:
             print(f"\033[32mINFO: 从参考图像提取人脸特征\033[0m")
@@ -361,12 +360,12 @@ class ApplyInstantID:
             # 使用InstantID模型处理嵌入
             start_instantid = time.time()
             instantid_model = instantid
-            instantid_model.to(self.device, dtype=self.dtype)
+            instantid_model.to(device, dtype=dtype)
 
-            image_prompt_embeds, uncond_image_prompt_embeds = instantid_model.get_image_embeds(clip_embed.to(self.device, dtype=self.dtype), clip_embed_zeroed.to(self.device, dtype=self.dtype))
+            image_prompt_embeds, uncond_image_prompt_embeds = instantid_model.get_image_embeds(clip_embed.to(device, dtype=dtype), clip_embed_zeroed.to(device, dtype=dtype))
 
-            image_prompt_embeds = image_prompt_embeds.to(self.device, dtype=self.dtype)
-            uncond_image_prompt_embeds = uncond_image_prompt_embeds.to(self.device, dtype=self.dtype)
+            image_prompt_embeds = image_prompt_embeds.to(device, dtype=dtype)
+            uncond_image_prompt_embeds = uncond_image_prompt_embeds.to(device, dtype=dtype)
             print(f"\033[36mInstantID模型处理耗时: {time.time() - start_instantid:.3f}s\033[0m")
 
             # 保存生成的face_embed用于下次使用
@@ -401,7 +400,7 @@ class ApplyInstantID:
         sigma_end = model.get_model_object("model_sampling").percent_to_sigma(end_at)
 
         if mask is not None:
-            mask = mask.to(self.device)
+            mask = mask.to(device)
 
         # 准备修补参数
         patch_kwargs = {
