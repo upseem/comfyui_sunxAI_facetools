@@ -59,6 +59,61 @@ class DetectFaces:
         has_face = len(faces) > 0
         return (faces, has_face)
 
+
+class DetectFaceByIndex:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            'required': {
+                'image': ('IMAGE',),
+                'threshold': ('FLOAT', {'default': 0.5, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
+                'min_size': ('INT', {'default': 64, 'max': 512, 'step': 8}),
+                'max_size': ('INT', {'default': 512, 'min': 512, 'step': 8}),
+                'face_index': ('INT', {'default': 0, 'min': 0, 'max': 10, 'step': 1}),
+            },
+            'optional': {
+                'mask': ('MASK',),
+            }
+        }
+
+    RETURN_TYPES = ('FACE', 'BOOLEAN')
+    RETURN_NAMES = ('faces', 'has_face')
+    FUNCTION = 'run'
+    CATEGORY = 'sunxAI_facetools'
+
+    def run(self, image, threshold, min_size, max_size, face_index, mask=None):
+        faces = []
+        masked = image
+        if mask is not None:
+            masked = image * tv.transforms.functional.resize(1-mask, image.shape[1:3])[..., None]
+        masked = (masked * 255).type(torch.uint8)
+        for i, img in enumerate(masked):
+            unfiltered_faces = detect_faces(img, threshold)
+            for face in unfiltered_faces:
+                a, b, c, d = face.bbox
+                h = abs(d-b)
+                w = abs(c-a)
+                if (h <= max_size or w <= max_size) and (min_size <= h or min_size <= w):
+                    face.image_idx = i
+                    face.img = image[i]
+                    faces.append(face)
+
+        # 按从左到右的顺序排序人脸（根据bbox的x坐标）
+        if faces:
+            faces.sort(key=lambda f: f.bbox[0])  # 按x坐标排序
+
+            # 根据face_index选择对应的人脸
+            if face_index < len(faces):
+                faces = [faces[face_index]]
+            else:
+                faces = []  # 下标超出范围，返回空列表
+        else:
+            faces = []
+
+        has_face = len(faces) > 0
+        return (faces, has_face)
+
+
 class CropFaces:
     @classmethod
     def INPUT_TYPES(cls):

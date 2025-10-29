@@ -6,6 +6,7 @@ from .InstantID import *
 
 NODE_CLASS_MAPPINGS = {
     'DetectFaces': DetectFaces,
+    'DetectFaceByIndex': DetectFaceByIndex,
     'CropFaces': CropFaces,
     'WarpFacesBack': WarpFaceBack,
     "SelectFloatByBool": SelectFloatByBool,
@@ -27,6 +28,7 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     'DetectFaces': 'DetectFaces',
+    'DetectFaceByIndex': 'Detect Face By Index',
     'CropFaces': 'CropFaces',
     'WarpFacesBack': 'Warp Faces Back',
     "SelectFloatByBool": "Select Float (Bool)",
