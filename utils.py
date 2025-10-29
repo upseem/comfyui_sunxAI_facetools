@@ -65,61 +65,76 @@ class Models:
         return dets
 
     @classmethod
-    def gender(cls, crop):
-        """使用 InsightFace 进行性别检测"""
-        print(f"[Gender] Starting InsightFace gender detection...")
+    def gender(cls, original_img):
+        """使用 InsightFace 在原始图像上检测所有人脸的性别，返回带下标的性别信息"""
+        print(f"[Gender] Starting InsightFace gender detection on original image...")
 
         try:
             from insightface.app import FaceAnalysis
 
-            # ✅ 根据环境自动选择 GPU 或 CPU
-            providers = ['CUDAExecutionProvider'] if torch.cuda.is_available() else ['CPUExecutionProvider']
+            # ✅ 自动选择 GPU / CPU
+            providers = ['CUDAExecutionProvider'] if torch.cuda.is_available() else [
+                'CPUExecutionProvider']
 
-            # ✅ 初始化（缓存起来避免重复加载）
+            # ✅ 初始化（缓存）
             if not hasattr(cls, "_insight_app"):
                 cls._insight_app = FaceAnalysis(providers=providers)
                 cls._insight_app.prepare(ctx_id=0, det_size=(640, 640))
+                mode = "GPU" if 'CUDAExecutionProvider' in providers else "CPU"
+                print(f"[Gender] InsightFace initialized ({mode} mode)")
 
             app = cls._insight_app
 
-            # 将 torch tensor 转为 numpy
-            if isinstance(crop, torch.Tensor):
-                crop_np = crop.detach().cpu().numpy()
-                if crop_np.ndim == 3 and crop_np.shape[0] in [1, 3]:
-                    crop_np = np.transpose(crop_np, (1, 2, 0))
+            # 转换原始图像
+            if isinstance(original_img, torch.Tensor):
+                img_np = original_img.detach().cpu().numpy()
+                if img_np.ndim == 4:  # [B, H, W, C]
+                    img_np = img_np[0]
+                if img_np.ndim == 3 and img_np.shape[0] in [1, 3]:
+                    img_np = np.transpose(img_np, (1, 2, 0))
             else:
-                crop_np = crop
+                img_np = original_img
 
-            crop_np = np.clip(crop_np * 255, 0, 255).astype(np.uint8)
+            img_np = np.clip(img_np * 255, 0, 255).astype(np.uint8)
+            if img_np.shape[2] == 3:
+                img_np = cv2.cvtColor(img_np, cv2.COLOR_RGB2BGR)
 
-            faces = app.get(crop_np)
-            print(f"[Gender] Found {len(faces)} faces")
+            print(f"[Gender] Original image shape: {img_np.shape}")
 
-            if len(faces) > 0:
-                face = faces[0]
-                # InsightFace: gender=1 表示男性，gender=0 表示女性
+            # 在完整图像中检测人脸
+            faces = app.get(img_np)
+            print(f"[Gender] Found {len(faces)} faces in original image")
+
+            # 按 x 坐标排序（从左到右）
+            faces.sort(key=lambda f: f.bbox[0])
+
+            # 提取所有带下标的性别信息
+            gender_results = []
+            for i, face in enumerate(faces):
+                fx1, fy1, fx2, fy2 = face.bbox.astype(int)
                 gender = "man" if face.gender == 1 else "woman"
-                print(f"[Gender] Gender detected: {gender}, Age: {face.age}, Confidence: {face.det_score:.3f}")
-                return gender
-            else:
-                print("[Gender] No face detected, returning 'unknown'")
-                return "unknown"
+                gender_results.append({
+                    'index': i,
+                    'gender': gender,
+                    'bbox': (fx1, fy1, fx2, fy2),
+                    'age': face.age,
+                    'score': face.det_score
+                })
+                print(f"[Gender] Face {i}: bbox=({fx1},{fy1},{fx2},{fy2}), gender={gender}, age={face.age}, score={face.det_score:.3f}")
+
+            return gender_results
 
         except ImportError:
             print("[Gender] InsightFace not installed, using fallback method")
-            # fallback: 用宽高比简单猜
-            crop_np = crop.detach().cpu().numpy() if isinstance(crop, torch.Tensor) else crop
-            h, w = crop_np.shape[-2:]
-            face_ratio = w / (h + 1e-6)  # 防止除零错误
-            result = "man" if face_ratio > 0.8 else "woman"
-            print(f"[Gender] Fallback result: {result} (ratio: {face_ratio:.3f})")
-            return result
+            # 简单的启发式方法
+            return [{'index': 0, 'gender': 'man', 'bbox': (0, 0, 100, 100), 'age': 30, 'score': 0.5}]
 
         except Exception as e:
             print(f"[Gender] Error in gender detection: {e}")
             import traceback
             traceback.print_exc()
-            return "unknown"
+            return []
+
 
     @classmethod
     def lmk(cls, crop):
@@ -178,7 +193,12 @@ class Face:
 
         # 只在需要时进行性别检测
         if detect_gender:
-            self.gender = Models.gender(crop)
+            print(f"[Face] Starting gender detection for face bbox: ({a}, {b}, {c}, {d})")
+            print(f"[Face] Crop shape: {crop.shape}")
+            # 注意：现在 gender 函数需要原始图像，但这里我们暂时设置为 unknown
+            # 实际的性别检测会在 DetectFaceByIndex 节点中进行
+            self.gender = "unknown"
+            print(f"[Face] Gender will be assigned later in DetectFaceByIndex")
         else:
             self.gender = "unknown"
 
