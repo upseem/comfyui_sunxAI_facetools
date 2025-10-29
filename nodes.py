@@ -102,11 +102,20 @@ class DetectFaceByIndex:
                     faces.append(face)
 
         # 按性别筛选人脸
+        print(f"[DetectFaceByIndex] Gender filter: {gender_filter}")
+        print(f"[DetectFaceByIndex] Total faces before filtering: {len(faces)}")
+
         if gender_filter == 1:  # 只选择男性
             faces = [face for face in faces if face.gender == "man"]
+            print(f"[DetectFaceByIndex] After filtering for men: {len(faces)} faces")
         elif gender_filter == 2:  # 只选择女性
             faces = [face for face in faces if face.gender == "woman"]
+            print(f"[DetectFaceByIndex] After filtering for women: {len(faces)} faces")
         # gender_filter == 0 时不进行性别筛选
+
+        # 打印所有人脸的性别信息
+        for i, face in enumerate(faces):
+            print(f"[DetectFaceByIndex] Face {i}: gender={face.gender}")
 
         # 按从左到右的顺序排序人脸（根据bbox的x坐标）
         if faces:

@@ -25,17 +25,18 @@ Face detection & restoration tools for ComfyUI by Sunx.ai
 
 ## 安装依赖
 
-本插件使用 cvlib 进行性别检测，首次使用时会自动下载模型：
+本插件使用 InsightFace 进行高精度性别检测，首次使用时会自动下载模型：
 
 ```bash
-pip install cvlib
+pip install insightface
 ```
 
-**注意**: cvlib 的性别检测功能需要额外的模型文件，首次运行时会自动下载。
+**注意**: InsightFace 需要额外的模型文件，首次运行时会自动下载。
 
 ### 性别检测特性
-- 使用 cvlib 进行高精度性别识别
-- 自动选择置信度最高的结果
+- 使用 InsightFace 进行高精度性别识别
+- 支持 GPU 和 CPU 模式，自动选择最佳设备
+- 提供年龄检测和置信度信息
 - 支持 fallback 方案（基于面部宽高比）
 - 防止除零错误，确保稳定运行
 

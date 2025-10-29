@@ -66,50 +66,61 @@ class Models:
 
     @classmethod
     def gender(cls, crop):
-        """使用 cvlib 进行性别检测"""
-        try:
-            import cvlib as cv
-            import cv2
+        """使用 InsightFace 进行性别检测"""
+        print(f"[Gender] Starting InsightFace gender detection...")
 
-            # 将 torch tensor 转为 numpy (确保在 CPU)
+        try:
+            from insightface.app import FaceAnalysis
+
+            # ✅ 根据环境自动选择 GPU 或 CPU
+            providers = ['CUDAExecutionProvider'] if torch.cuda.is_available() else ['CPUExecutionProvider']
+
+            # ✅ 初始化（缓存起来避免重复加载）
+            if not hasattr(cls, "_insight_app"):
+                cls._insight_app = FaceAnalysis(providers=providers)
+                cls._insight_app.prepare(ctx_id=0, det_size=(640, 640))
+
+            app = cls._insight_app
+
+            # 将 torch tensor 转为 numpy
             if isinstance(crop, torch.Tensor):
                 crop_np = crop.detach().cpu().numpy()
-                # [C,H,W] -> [H,W,C]
-                if crop_np.ndim == 3 and crop_np.shape[0] in [1,3]:
+                if crop_np.ndim == 3 and crop_np.shape[0] in [1, 3]:
                     crop_np = np.transpose(crop_np, (1, 2, 0))
             else:
                 crop_np = crop
 
-            # 转换为 uint8
             crop_np = np.clip(crop_np * 255, 0, 255).astype(np.uint8)
 
-            # 检测人脸
-            faces, confidences = cv.detect_face(crop_np)
+            faces = app.get(crop_np)
+            print(f"[Gender] Found {len(faces)} faces")
 
             if len(faces) > 0:
-                # 取第一个人脸区域
-                x1, y1, x2, y2 = faces[0]
-                face_crop = np.copy(crop_np[y1:y2, x1:x2])
-
-                # 性别检测
-                label, confidence = cv.detect_gender(face_crop)
-                best_label = label[int(np.argmax(confidence))]  # 取置信度最高的结果
-                return best_label
+                face = faces[0]
+                # InsightFace: gender=1 表示男性，gender=0 表示女性
+                gender = "man" if face.gender == 1 else "woman"
+                print(f"[Gender] Gender detected: {gender}, Age: {face.age}, Confidence: {face.det_score:.3f}")
+                return gender
             else:
+                print("[Gender] No face detected, returning 'unknown'")
                 return "unknown"
 
         except ImportError:
-            print("[Gender] cvlib not installed, using fallback method")
-
+            print("[Gender] InsightFace not installed, using fallback method")
             # fallback: 用宽高比简单猜
             crop_np = crop.detach().cpu().numpy() if isinstance(crop, torch.Tensor) else crop
             h, w = crop_np.shape[-2:]
             face_ratio = w / (h + 1e-6)  # 防止除零错误
-            return "man" if face_ratio > 0.8 else "woman"
+            result = "man" if face_ratio > 0.8 else "woman"
+            print(f"[Gender] Fallback result: {result} (ratio: {face_ratio:.3f})")
+            return result
 
         except Exception as e:
             print(f"[Gender] Error in gender detection: {e}")
+            import traceback
+            traceback.print_exc()
             return "unknown"
+
     @classmethod
     def lmk(cls, crop):
         if '_lmk' not in cls.__dict__:
