@@ -66,10 +66,11 @@ class DetectFaceByIndex:
         return {
             'required': {
                 'image': ('IMAGE',),
-                'threshold': ('FLOAT', {'default': 0.5, 'min': 0.0, 'max': 1.0, 'step': 0.01}),
-                'min_size': ('INT', {'default': 64, 'max': 512, 'step': 8}),
-                'max_size': ('INT', {'default': 512, 'min': 512, 'step': 8}),
-                'face_index': ('INT', {'default': 0, 'min': 0, 'max': 10, 'step': 1}),
+                'threshold': ('FLOAT', {'default': 0.5, 'min': 0.0, 'max': 1.0, 'step': 0.01, 'tooltip': '人脸检测置信度阈值，越高越严格'}),
+                'min_size': ('INT', {'default': 64, 'max': 512, 'step': 8, 'tooltip': '最小人脸尺寸，过滤掉太小的检测结果'}),
+                'max_size': ('INT', {'default': 512, 'min': 512, 'step': 8, 'tooltip': '最大人脸尺寸，过滤掉太大的检测结果'}),
+                'face_index': ('INT', {'default': 0, 'min': 0, 'max': 10, 'step': 1, 'tooltip': '人脸索引：0=最左边第一个，1=第二个，以此类推'}),
+                'gender_filter': ('INT', {'default': 0, 'min': 0, 'max': 2, 'step': 1, 'tooltip': '性别筛选：0=任意性别，1=只检测男性，2=只检测女性'}),
             },
             'optional': {
                 'mask': ('MASK',),
@@ -81,14 +82,16 @@ class DetectFaceByIndex:
     FUNCTION = 'run'
     CATEGORY = 'sunxAI_facetools'
 
-    def run(self, image, threshold, min_size, max_size, face_index, mask=None):
+    def run(self, image, threshold, min_size, max_size, face_index, gender_filter, mask=None):
         faces = []
         masked = image
         if mask is not None:
             masked = image * tv.transforms.functional.resize(1-mask, image.shape[1:3])[..., None]
         masked = (masked * 255).type(torch.uint8)
         for i, img in enumerate(masked):
-            unfiltered_faces = detect_faces(img, threshold)
+            # 只在需要性别筛选时才进行性别检测
+            detect_gender = gender_filter != 0
+            unfiltered_faces = detect_faces(img, threshold, detect_gender=detect_gender)
             for face in unfiltered_faces:
                 a, b, c, d = face.bbox
                 h = abs(d-b)
@@ -97,6 +100,13 @@ class DetectFaceByIndex:
                     face.image_idx = i
                     face.img = image[i]
                     faces.append(face)
+
+        # 按性别筛选人脸
+        if gender_filter == 1:  # 只选择男性
+            faces = [face for face in faces if face.gender == "male"]
+        elif gender_filter == 2:  # 只选择女性
+            faces = [face for face in faces if face.gender == "female"]
+        # gender_filter == 0 时不进行性别筛选
 
         # 按从左到右的顺序排序人脸（根据bbox的x坐标）
         if faces:

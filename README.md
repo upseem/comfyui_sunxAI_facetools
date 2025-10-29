@@ -14,7 +14,22 @@ Face detection & restoration tools for ComfyUI by Sunx.ai
 
 # Features
 
-- A list of features
+- **DetectFaces**: 检测图像中的人脸，返回面积最大的人脸
+- **DetectFaceByIndex**: 根据索引检测人脸，支持从左到右选择特定人脸（0=最左边，1=第二个，以此类推），支持性别筛选（0=任意性别，1=男性，2=女性）。性别检测只在需要时启用，提高性能。
+- **DetectFaceByGender**: 根据性别和索引检测人脸，支持筛选男性/女性人脸，并按从左到右顺序选择
+- **CropFaces**: 裁剪检测到的人脸区域
+- **WarpFaceBack**: 将处理后的脸贴回原图
+- **InstantID**: 人脸身份保持功能
+- **ColorAdjust**: 人脸颜色调整
+- **SaveImageWebsocket**: 通过 WebSocket 保存图像
+
+## 安装依赖
+
+本插件使用 cvlib 进行性别检测，首次使用时会自动下载模型：
+
+```bash
+pip install cvlib
+```
 
 ## Develop
 
@@ -32,13 +47,13 @@ The `-e` flag above will result in a "live" install, in the sense that any chang
 
 Install Github Desktop or follow these [instructions](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent) for ssh.
 
-1. Create a Github repository that matches the directory name. 
+1. Create a Github repository that matches the directory name.
 2. Push the files to Git
 ```
 git add .
 git commit -m "project scaffolding"
 git push
-``` 
+```
 
 ## Writing custom nodes
 
@@ -58,7 +73,7 @@ If you wish to share this custom node with others in the community, you can publ
 
 You need to make an account on https://registry.comfy.org and create an API key token.
 
-- [ ] Go to the [registry](https://registry.comfy.org). Login and create a publisher id (everything after the `@` sign on your registry profile). 
+- [ ] Go to the [registry](https://registry.comfy.org). Login and create a publisher id (everything after the `@` sign on your registry profile).
 - [ ] Add the publisher id into the pyproject.toml file.
 - [ ] Create an api key on the Registry for publishing from Github. [Instructions](https://docs.comfy.org/registry/publishing#create-an-api-key-for-publishing).
 - [ ] Add it to your Github Repository Secrets as `REGISTRY_ACCESS_TOKEN`.

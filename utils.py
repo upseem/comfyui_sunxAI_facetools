@@ -63,6 +63,45 @@ class Models:
         print(f"[YOLO] Predicting on device: {cls._yolo.device}")
         dets = cls._yolo(img, conf=threshold)[0]
         return dets
+
+    @classmethod
+    def gender(cls, crop):
+        """使用 cvlib 进行性别检测"""
+        try:
+            import cvlib as cv
+            from cvlib.object_detection import draw_bbox
+
+            # 将 tensor 转换为 numpy 数组
+            crop_np = crop.numpy()
+            if crop_np.shape[0] == 1:  # 如果是 batch 格式
+                crop_np = crop_np[0]
+
+            # 转换为 uint8 格式
+            crop_np = (crop_np * 255).astype(np.uint8)
+
+            # 使用 cvlib 检测人脸和性别
+            faces, confidences, genders = cv.detect_face(crop_np)
+
+            if len(faces) > 0:
+                # 返回第一个检测到的性别
+                return genders[0]
+            else:
+                return "unknown"
+
+        except ImportError:
+            print("[Gender] cvlib not installed, using fallback method")
+            # 如果没有安装 cvlib，使用简单的启发式方法
+            crop_np = crop.numpy()
+            h, w = crop_np.shape[1:3]
+            face_ratio = w / h
+
+            if face_ratio > 0.8:
+                return "male"
+            else:
+                return "female"
+        except Exception as e:
+            print(f"[Gender] Error in gender detection: {e}")
+            return "unknown"
     @classmethod
     def lmk(cls, crop):
         if '_lmk' not in cls.__dict__:
@@ -87,7 +126,7 @@ def get_submatrix_with_padding(img, a, b, c, d):
     return submatrix
 
 class Face:
-    def __init__(self, img, a, b, c, d) -> None:
+    def __init__(self, img, a, b, c, d, detect_gender=False) -> None:
         self.img = img
         lmk = None
         best_score = 0
@@ -118,6 +157,12 @@ class Face:
         rot = cv2.getRotationMatrix2D((128*s,128*s), 90*i, 1)
         self.R = np.vstack((rot, np.array((0,0,1))))
 
+        # 只在需要时进行性别检测
+        if detect_gender:
+            self.gender = Models.gender(crop)
+        else:
+            self.gender = "unknown"
+
     def crop(self, size, crop_factor):
         S = np.array([[1/crop_factor, 0, 0], [0, 1/crop_factor, 0], [0, 0, 1]])
         M = estimate_norm(self.kps, size)
@@ -132,7 +177,7 @@ class Face:
 
         return N, crop
 
-def detect_faces(img, threshold):
+def detect_faces(img, threshold, detect_gender=False):
     img = pad_to_stride(img, stride=32)
     original_torch_load = torch.load
     def torch_load_wrap(*args, **kwargs):
@@ -148,7 +193,7 @@ def detect_faces(img, threshold):
         r = np.sqrt((c-a)**2 + (d-b)**2) / 2
 
         a,b,c,d = [int(x) for x in (cx - r, cy - r, cx + r, cy + r)]
-        face = Face(img, a, b, c, d)
+        face = Face(img, a, b, c, d, detect_gender=detect_gender)
 
         faces.append(face)
     return faces
