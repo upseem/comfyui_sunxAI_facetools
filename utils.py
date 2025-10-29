@@ -69,36 +69,44 @@ class Models:
         """使用 cvlib 进行性别检测"""
         try:
             import cvlib as cv
-            from cvlib.object_detection import draw_bbox
+            import cv2
 
-            # 将 tensor 转换为 numpy 数组
-            crop_np = crop.numpy()
-            if crop_np.shape[0] == 1:  # 如果是 batch 格式
-                crop_np = crop_np[0]
+            # 将 torch tensor 转为 numpy (确保在 CPU)
+            if isinstance(crop, torch.Tensor):
+                crop_np = crop.detach().cpu().numpy()
+                # [C,H,W] -> [H,W,C]
+                if crop_np.ndim == 3 and crop_np.shape[0] in [1,3]:
+                    crop_np = np.transpose(crop_np, (1, 2, 0))
+            else:
+                crop_np = crop
 
-            # 转换为 uint8 格式
-            crop_np = (crop_np * 255).astype(np.uint8)
+            # 转换为 uint8
+            crop_np = np.clip(crop_np * 255, 0, 255).astype(np.uint8)
 
-            # 使用 cvlib 检测人脸和性别
-            faces, confidences, genders = cv.detect_face(crop_np)
+            # 检测人脸
+            faces, confidences = cv.detect_face(crop_np)
 
             if len(faces) > 0:
-                # 返回第一个检测到的性别
-                return genders[0]
+                # 取第一个人脸区域
+                x1, y1, x2, y2 = faces[0]
+                face_crop = np.copy(crop_np[y1:y2, x1:x2])
+
+                # 性别检测
+                label, confidence = cv.detect_gender(face_crop)
+                best_label = label[int(np.argmax(confidence))]  # 取置信度最高的结果
+                return best_label
             else:
                 return "unknown"
 
         except ImportError:
             print("[Gender] cvlib not installed, using fallback method")
-            # 如果没有安装 cvlib，使用简单的启发式方法
-            crop_np = crop.numpy()
-            h, w = crop_np.shape[1:3]
-            face_ratio = w / h
 
-            if face_ratio > 0.8:
-                return "male"
-            else:
-                return "female"
+            # fallback: 用宽高比简单猜
+            crop_np = crop.detach().cpu().numpy() if isinstance(crop, torch.Tensor) else crop
+            h, w = crop_np.shape[-2:]
+            face_ratio = w / (h + 1e-6)  # 防止除零错误
+            return "man" if face_ratio > 0.8 else "woman"
+
         except Exception as e:
             print(f"[Gender] Error in gender detection: {e}")
             return "unknown"

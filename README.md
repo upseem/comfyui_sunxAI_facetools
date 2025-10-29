@@ -31,6 +31,14 @@ Face detection & restoration tools for ComfyUI by Sunx.ai
 pip install cvlib
 ```
 
+**注意**: cvlib 的性别检测功能需要额外的模型文件，首次运行时会自动下载。
+
+### 性别检测特性
+- 使用 cvlib 进行高精度性别识别
+- 自动选择置信度最高的结果
+- 支持 fallback 方案（基于面部宽高比）
+- 防止除零错误，确保稳定运行
+
 ## Develop
 
 To install the dev dependencies and pre-commit (will run the ruff hook), do:
